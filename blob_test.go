@@ -433,7 +433,7 @@ func (s *StorageBlobSuite) TestGetBlobRange(c *chk.C) {
 	}
 }
 
-func (s *StorageBlobSuite) TestCreateBlockBlobWithData(c *chk.C) {
+func (s *StorageBlobSuite) TestCreateBlockBlobFromReader(c *chk.C) {
 	cli := getBlobClient(c)
 	cnt := randContainer()
 	c.Assert(cli.CreateContainer(cnt, ContainerAccessTypePrivate), chk.IsNil)
@@ -441,7 +441,7 @@ func (s *StorageBlobSuite) TestCreateBlockBlobWithData(c *chk.C) {
 
 	name := randString(20)
 	data := randBytes(8888)
-	c.Assert(cli.CreateBlockBlobWithData(cnt, name, data), chk.IsNil)
+	c.Assert(cli.CreateBlockBlobFromReader(cnt, name, uint64(len(data)), bytes.NewReader(data)), chk.IsNil)
 
 	body, err := cli.GetBlob(cnt, name)
 	c.Assert(err, chk.IsNil)
