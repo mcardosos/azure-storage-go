@@ -217,7 +217,7 @@ func listBlobsAsFiles(cli BlobStorageClient, cnt Container, parentDir string) (f
 //
 //  - The "folder names" are returned *with trailing forward slash* as per MSDN.
 //
-//  - The "folder names" will be "absolue paths", e.g. listing things under "/usr/"
+//  - The "folder names" will be "absolute paths", e.g. listing things under "/usr/"
 //    will return folder names "/usr/bin/".
 //
 //  - The "file names" are returned as full blob names, e.g. when listing
