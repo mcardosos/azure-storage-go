@@ -96,6 +96,8 @@ func (p ListContainersParameters) getParameters() url.Values {
 	return out
 }
 
+// ResponseInfo includes information related to an Azure storage request
+// (to the request itself, not the operation)
 type ResponseInfo struct {
 	Date      time.Time
 	RequestID string
@@ -128,6 +130,7 @@ func getResponseInfo(h http.Header) (ResponseInfo, error) {
 	return ri, nil
 }
 
+// OriginResponse includes CORS releated response headers
 type OriginResponse struct {
 	AccessControlAllowOrigin      string
 	AccessControlExposeHeaders    string
