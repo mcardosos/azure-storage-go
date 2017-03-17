@@ -129,7 +129,7 @@ func (b *Blob) AbortCopy(copyID string, options *AbortCopyOptions) error {
 // WaitForCopy loops until a BlobCopy operation is completed (or fails with error)
 func (b *Blob) WaitForCopy(copyID string) error {
 	for {
-		err := b.GetProperties(nil)
+		_, err := b.GetProperties(nil)
 		if err != nil {
 			return err
 		}

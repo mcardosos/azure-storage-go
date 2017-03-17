@@ -25,8 +25,8 @@ func (s *BlockBlobSuite) TestCreateBlockBlobFromReader(c *chk.C) {
 
 	resp, err := b.Get(nil)
 	c.Assert(err, chk.IsNil)
-	gotData, err := ioutil.ReadAll(resp)
-	defer resp.Close()
+	gotData, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 
 	c.Assert(err, chk.IsNil)
 	c.Assert(gotData, chk.DeepEquals, data)
@@ -128,7 +128,7 @@ func (s *BlockBlobSuite) TestPutEmptyBlockBlob(c *chk.C) {
 
 	c.Assert(b.putSingleBlockBlob([]byte{}), chk.IsNil)
 
-	err := b.GetProperties(nil)
+	_, err := b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 	c.Assert(b.Properties.ContentLength, chk.Not(chk.Equals), 0)
 }

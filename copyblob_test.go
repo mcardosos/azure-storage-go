@@ -35,8 +35,8 @@ func (s *CopyBlobSuite) TestBlobCopy(c *chk.C) {
 	resp, err := dstBlob.Get(nil)
 	c.Assert(err, chk.IsNil)
 
-	b, err := ioutil.ReadAll(resp)
-	defer resp.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	c.Assert(err, chk.IsNil)
 	c.Assert(b, chk.DeepEquals, body)
 }

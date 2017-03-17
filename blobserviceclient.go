@@ -1,9 +1,11 @@
 package storage
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 // BlobStorageClient contains operations for Microsoft Azure Blob Storage
@@ -92,4 +94,68 @@ func (p ListContainersParameters) getParameters() url.Values {
 	}
 
 	return out
+}
+
+type ResponseInfo struct {
+	Date      time.Time
+	RequestID string
+	Version   string
+}
+
+func responder(resp *storageResponse, status []int) (ResponseInfo, error) {
+	ri, err := getResponseInfo(resp.headers)
+	if err != nil {
+		return ri, err
+	}
+	err = checkRespCode(resp.statusCode, status)
+	if err != nil {
+		return ri, err
+
+	}
+	return ri, nil
+}
+
+func getResponseInfo(h http.Header) (ResponseInfo, error) {
+	ri := ResponseInfo{
+		RequestID: h.Get(http.CanonicalHeaderKey("x-ms-request-id")),
+		Version:   h.Get(http.CanonicalHeaderKey("x-ms-version")),
+	}
+	date, err := getTimeFromHeaders(h, "Date")
+	if err != nil {
+		return ri, err
+	}
+	ri.Date = date
+	return ri, nil
+}
+
+type OriginResponse struct {
+	AccessControlAllowOrigin      string
+	AccessControlExposeHeaders    string
+	Vary                          string
+	AccessControlAllowCredentials bool
+}
+
+func getOriginResponse(h http.Header) (*OriginResponse, error) {
+	or := OriginResponse{
+		AccessControlAllowOrigin:   h.Get("Access-Control-Allow-Origin"),
+		AccessControlExposeHeaders: h.Get("Access-Control-Expose-Headers"),
+		Vary: h.Get("Vary"),
+	}
+
+	acac, err := getBoolFromHeaders(h, "Access-Control-Allow-Credentials")
+	if err != nil {
+		return nil, err
+	}
+	or.AccessControlAllowCredentials = acac
+
+	return &or, nil
+}
+
+func addOtherErrors(respErr, err error) error {
+	azureError, ok := respErr.(AzureStorageServiceError)
+	if ok {
+		azureError.OtherErrors = err.Error()
+		return azureError
+	}
+	return fmt.Errorf("%v. %v", respErr, err)
 }

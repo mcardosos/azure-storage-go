@@ -23,7 +23,7 @@ func (s *PageBlobSuite) TestPutPageBlob(c *chk.C) {
 	c.Assert(b.PutPageBlob(nil), chk.IsNil)
 
 	// Verify
-	err := b.GetProperties(nil)
+	_, err := b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 	c.Assert(b.Properties.ContentLength, chk.Equals, size)
 	c.Assert(b.Properties.BlobType, chk.Equals, BlobTypePage)
@@ -60,8 +60,8 @@ func (s *PageBlobSuite) TestPutPagesUpdate(c *chk.C) {
 	}
 	out, err := b.GetRange(&options)
 	c.Assert(err, chk.IsNil)
-	defer out.Close()
-	blobContents, err := ioutil.ReadAll(out)
+	defer out.Body.Close()
+	blobContents, err := ioutil.ReadAll(out.Body)
 	c.Assert(err, chk.IsNil)
 	c.Assert(blobContents, chk.DeepEquals, append(chunk1, chunk2...))
 
@@ -74,8 +74,8 @@ func (s *PageBlobSuite) TestPutPagesUpdate(c *chk.C) {
 	// Verify contents
 	out, err = b.GetRange(&options)
 	c.Assert(err, chk.IsNil)
-	defer out.Close()
-	blobContents, err = ioutil.ReadAll(out)
+	defer out.Body.Close()
+	blobContents, err = ioutil.ReadAll(out.Body)
 	c.Assert(err, chk.IsNil)
 	c.Assert(blobContents, chk.DeepEquals, append(append(chunk0, chunk1[512:]...), chunk2...))
 }
@@ -112,9 +112,9 @@ func (s *PageBlobSuite) TestPutPagesClear(c *chk.C) {
 	}
 	out, err := b.GetRange(&options)
 	c.Assert(err, chk.IsNil)
-	contents, err := ioutil.ReadAll(out)
+	contents, err := ioutil.ReadAll(out.Body)
 	c.Assert(err, chk.IsNil)
-	defer out.Close()
+	defer out.Body.Close()
 	c.Assert(contents, chk.DeepEquals, append(append(chunk[:512], make([]byte, 512)...), chunk[1024:]...))
 }
 

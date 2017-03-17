@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	chk "gopkg.in/check.v1"
 )
@@ -97,9 +98,10 @@ func (s *StorageBlobSuite) TestDeleteBlobIfExists(c *chk.C) {
 	c.Assert(cnt.Create(nil), chk.IsNil)
 	defer cnt.Delete(nil)
 
-	c.Assert(b.Delete(nil), chk.NotNil)
+	_, err := b.Delete(nil)
+	c.Assert(err, chk.NotNil)
 
-	ok, err := b.DeleteIfExists(nil)
+	ok, _, err := b.DeleteIfExists(nil)
 	c.Assert(err, chk.IsNil)
 	c.Assert(ok, chk.Equals, false)
 }
@@ -112,13 +114,14 @@ func (s *StorageBlobSuite) TestDeleteBlobWithConditions(c *chk.C) {
 	defer cnt.Delete(nil)
 
 	c.Assert(b.CreateBlockBlob(nil), chk.IsNil)
-	err := b.GetProperties(nil)
+	_, err := b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 	oldProps := b.Properties
 
 	// Update metadata, so Etag changes
-	c.Assert(b.SetMetadata(nil), chk.IsNil)
-	err = b.GetProperties(nil)
+	_, err = b.SetMetadata(nil)
+	c.Assert(err, chk.IsNil)
+	_, err = b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 	newProps := b.Properties
 
@@ -126,7 +129,7 @@ func (s *StorageBlobSuite) TestDeleteBlobWithConditions(c *chk.C) {
 	options := DeleteBlobOptions{
 		IfMatch: oldProps.Etag,
 	}
-	err = b.Delete(&options)
+	_, err = b.Delete(&options)
 	c.Assert(err, chk.FitsTypeOf, AzureStorageServiceError{})
 	c.Assert(err.(AzureStorageServiceError).StatusCode, chk.Equals, http.StatusPreconditionFailed)
 	ok, err := b.Exists()
@@ -135,7 +138,7 @@ func (s *StorageBlobSuite) TestDeleteBlobWithConditions(c *chk.C) {
 
 	// "Delete if matches new Etag" should succeed.
 	options.IfMatch = newProps.Etag
-	err = b.Delete(&options)
+	_, err = b.Delete(&options)
 	c.Assert(err, chk.IsNil)
 	ok, err = b.Exists()
 	c.Assert(err, chk.IsNil)
@@ -152,14 +155,14 @@ func (s *StorageBlobSuite) TestGetBlobProperties(c *chk.C) {
 	defer cnt.Delete(nil)
 
 	// Nonexisting blob
-	err := b.GetProperties(nil)
+	_, err := b.GetProperties(nil)
 	c.Assert(err, chk.NotNil)
 
 	// Put the blob
 	c.Assert(b.putSingleBlockBlob([]byte(contents)), chk.IsNil)
 
 	// Get blob properties
-	err = b.GetProperties(nil)
+	_, err = b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 
 	c.Assert(b.Properties.ContentLength, chk.Equals, int64(len(contents)))
@@ -190,7 +193,7 @@ func (s *StorageBlobSuite) TestGetAndSetMetadata(c *chk.C) {
 
 	c.Assert(b.putSingleBlockBlob([]byte{}), chk.IsNil)
 
-	err := b.GetMetadata(nil)
+	_, err := b.GetMetadata(nil)
 	c.Assert(err, chk.IsNil)
 	c.Assert(b.Metadata, chk.HasLen, 0)
 
@@ -200,10 +203,10 @@ func (s *StorageBlobSuite) TestGetAndSetMetadata(c *chk.C) {
 	}
 	b.Metadata = metaPut
 
-	err = b.SetMetadata(nil)
+	_, err = b.SetMetadata(nil)
 	c.Assert(err, chk.IsNil)
 
-	err = b.GetMetadata(nil)
+	_, err = b.GetMetadata(nil)
 	c.Assert(err, chk.IsNil)
 	c.Check(b.Metadata, chk.DeepEquals, metaPut)
 
@@ -218,10 +221,10 @@ func (s *StorageBlobSuite) TestGetAndSetMetadata(c *chk.C) {
 	}
 
 	b.Metadata = metaPutUpper
-	err = b.SetMetadata(nil)
+	_, err = b.SetMetadata(nil)
 	c.Assert(err, chk.IsNil)
 
-	err = b.GetMetadata(nil)
+	_, err = b.GetMetadata(nil)
 	c.Assert(err, chk.IsNil)
 	c.Check(b.Metadata, chk.DeepEquals, metaExpectLower)
 }
@@ -245,15 +248,15 @@ func (s *StorageBlobSuite) TestSetMetadataWithExtraHeaders(c *chk.C) {
 	}
 
 	// Set with incorrect If-Match in extra headers should result in error
-	err := b.SetMetadata(&options)
+	_, err := b.SetMetadata(&options)
 	c.Assert(err, chk.NotNil)
 
-	err = b.GetProperties(nil)
+	_, err = b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 
 	// Set with matching If-Match in extra headers should succeed
 	options.IfMatch = b.Properties.Etag
-	err = b.SetMetadata(&options)
+	_, err = b.SetMetadata(&options)
 	c.Assert(err, chk.IsNil)
 }
 
@@ -275,10 +278,10 @@ func (s *StorageBlobSuite) TestSetBlobProperties(c *chk.C) {
 	}
 	b.Properties = input
 
-	err := b.SetProperties(nil)
+	_, err := b.SetProperties(nil)
 	c.Assert(err, chk.IsNil)
 
-	err = b.GetProperties(nil)
+	_, err = b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 
 	c.Check(b.Properties.CacheControl, chk.Equals, input.CacheControl)
@@ -357,9 +360,9 @@ func (s *StorageBlobSuite) TestSnapshotBlobWithInvalidLease(c *chk.C) {
 	options := SnapshotOptions{
 		LeaseID: "GolangRocksOnAzure",
 	}
-	snapshotTime, err := b.Snapshot(&options)
+	resp, err := b.Snapshot(&options)
 	c.Assert(err, chk.NotNil)
-	c.Assert(snapshotTime, chk.IsNil)
+	c.Assert(resp.Snapshot, chk.Equals, time.Time{})
 }
 
 func (s *StorageBlobSuite) TestGetBlobRange(c *chk.C) {
@@ -411,12 +414,38 @@ func (s *StorageBlobSuite) TestGetBlobRange(c *chk.C) {
 	for _, r := range cases {
 		resp, err := b.GetRange(&(r.options))
 		c.Assert(err, chk.IsNil)
-		blobBody, err := ioutil.ReadAll(resp)
+		blobBody, err := ioutil.ReadAll(resp.Body)
 		c.Assert(err, chk.IsNil)
 
 		str := string(blobBody)
 		c.Assert(str, chk.Equals, r.expected)
 	}
+}
+
+func (s *StorageBlobSuite) Test_getResponseInfo(c *chk.C) {
+	cli := getBlobClient(c)
+	cnt := cli.GetContainerReference(randContainer())
+	err := cnt.Create(nil)
+	c.Assert(err, chk.IsNil)
+	defer cnt.Delete(nil)
+	blob := cnt.GetBlobReference(randName(10))
+
+	// attempt to delete a nonexisting blob
+	resp, err := blob.Delete(nil)
+	_, ok := err.(AzureStorageServiceError)
+	c.Check(ok, chk.Equals, true)
+	c.Assert(resp.Date, chk.Not(chk.Equals), time.Time{})
+	c.Assert(resp.RequestID, chk.Not(chk.Equals), "")
+	c.Assert(resp.Version, chk.Not(chk.Equals), "")
+
+	// try again with a successful delete operation
+	err = blob.putSingleBlockBlob([]byte("Hi there!"))
+	c.Assert(err, chk.IsNil)
+	resp, err = blob.Delete(nil)
+	c.Assert(err, chk.IsNil)
+	c.Assert(resp.Date, chk.Not(chk.Equals), time.Time{})
+	c.Assert(resp.RequestID, chk.Not(chk.Equals), "")
+	c.Assert(resp.Version, chk.Not(chk.Equals), "")
 }
 
 func (b *Blob) putSingleBlockBlob(chunk []byte) error {

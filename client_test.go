@@ -168,8 +168,7 @@ func (s *StorageClientSuite) TestReturnsStorageServiceError_withoutResponseBody(
 	cli := getBlobClient(c)
 	cnt := cli.GetContainerReference("non-existing-container")
 	b := cnt.GetBlobReference("non-existing-blob")
-	err := b.GetProperties(nil)
-
+	_, err := b.GetProperties(nil)
 	c.Assert(err, chk.NotNil)
 	c.Assert(err, chk.FitsTypeOf, AzureStorageServiceError{})
 

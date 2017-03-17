@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -140,17 +141,37 @@ func addSnapshot(params url.Values, snapshot *time.Time) url.Values {
 	return params
 }
 
-func getTimeFromHeaders(h http.Header, key string) (*time.Time, error) {
+func getTimeFromHeaders(h http.Header, key string) (time.Time, error) {
 	var out time.Time
 	var err error
 	outStr := h.Get(key)
 	if outStr != "" {
 		out, err = time.Parse(time.RFC1123, outStr)
-		if err != nil {
-			return nil, err
-		}
 	}
-	return &out, nil
+	if err != nil {
+		out, err = time.Parse(time.RFC3339, outStr)
+	}
+	return out, err
+}
+
+func getBoolFromHeaders(h http.Header, key string) (bool, error) {
+	var out bool
+	var err error
+	outStr := h.Get(key)
+	if outStr != "" {
+		out, err = strconv.ParseBool(outStr)
+	}
+	return out, err
+}
+
+func getInt64FromHeaders(h http.Header, key string) (int64, error) {
+	var out int64
+	var err error
+	outStr := h.Get(key)
+	if outStr != "" {
+		out, err = strconv.ParseInt(outStr, 0, 64)
+	}
+	return out, err
 }
 
 // TimeRFC1123 is an alias for time.Time needed for custom Unmarshalling
@@ -166,4 +187,33 @@ func (t *TimeRFC1123) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 	}
 	*t = TimeRFC1123(parse)
 	return nil
+}
+
+// returns a map of custom metadata values from the specified HTTP header
+func getMetadataFromHeaders(header http.Header) map[string]string {
+	metadata := make(map[string]string)
+	for k, v := range header {
+		// Can't trust CanonicalHeaderKey() to munge case
+		// reliably. "_" is allowed in identifiers:
+		// https://msdn.microsoft.com/en-us/library/azure/dd179414.aspx
+		// https://msdn.microsoft.com/library/aa664670(VS.71).aspx
+		// http://tools.ietf.org/html/rfc7230#section-3.2
+		// ...but "_" is considered invalid by
+		// CanonicalMIMEHeaderKey in
+		// https://golang.org/src/net/textproto/reader.go?s=14615:14659#L542
+		// so k can be "X-Ms-Meta-Lol" or "x-ms-meta-lol_rofl".
+		k = strings.ToLower(k)
+		if len(v) == 0 || !strings.HasPrefix(k, strings.ToLower(userDefinedMetadataHeaderPrefix)) {
+			continue
+		}
+		// metadata["lol"] = content of the last X-Ms-Meta-Lol header
+		k = k[len(userDefinedMetadataHeaderPrefix):]
+		metadata[k] = v[len(v)-1]
+	}
+
+	if len(metadata) == 0 {
+		return nil
+	}
+
+	return metadata
 }

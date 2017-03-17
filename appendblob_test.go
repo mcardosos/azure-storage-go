@@ -20,7 +20,7 @@ func (s *AppendBlobSuite) TestPutAppendBlob(c *chk.C) {
 	c.Assert(b.PutAppendBlob(nil), chk.IsNil)
 
 	// Verify
-	err := b.GetProperties(nil)
+	_, err := b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 	c.Assert(b.Properties.ContentLength, chk.Equals, int64(0))
 	c.Assert(b.Properties.BlobType, chk.Equals, BlobTypeAppend)
@@ -50,8 +50,8 @@ func (s *AppendBlobSuite) TestPutAppendBlobAppendBlocks(c *chk.C) {
 	}
 	out, err := b.GetRange(&options)
 	c.Assert(err, chk.IsNil)
-	defer out.Close()
-	blobContents, err := ioutil.ReadAll(out)
+	defer out.Body.Close()
+	blobContents, err := ioutil.ReadAll(out.Body)
 	c.Assert(err, chk.IsNil)
 	c.Assert(blobContents, chk.DeepEquals, chunk1)
 
@@ -62,8 +62,8 @@ func (s *AppendBlobSuite) TestPutAppendBlobAppendBlocks(c *chk.C) {
 	options.Range.End = uint64(len(chunk1) + len(chunk2) - 1)
 	out, err = b.GetRange(&options)
 	c.Assert(err, chk.IsNil)
-	defer out.Close()
-	blobContents, err = ioutil.ReadAll(out)
+	defer out.Body.Close()
+	blobContents, err = ioutil.ReadAll(out.Body)
 	c.Assert(err, chk.IsNil)
 	c.Assert(blobContents, chk.DeepEquals, append(chunk1, chunk2...))
 }
@@ -78,7 +78,7 @@ func (s *StorageBlobSuite) TestPutAppendBlobSpecialChars(c *chk.C) {
 	c.Assert(b.PutAppendBlob(nil), chk.IsNil)
 
 	// Verify metadata
-	err := b.GetProperties(nil)
+	_, err := b.GetProperties(nil)
 	c.Assert(err, chk.IsNil)
 	c.Assert(b.Properties.ContentLength, chk.Equals, int64(0))
 	c.Assert(b.Properties.BlobType, chk.Equals, BlobTypeAppend)
@@ -98,8 +98,8 @@ func (s *StorageBlobSuite) TestPutAppendBlobSpecialChars(c *chk.C) {
 	}
 	out, err := b.GetRange(&options)
 	c.Assert(err, chk.IsNil)
-	defer out.Close()
-	blobContents, err := ioutil.ReadAll(out)
+	defer out.Body.Close()
+	blobContents, err := ioutil.ReadAll(out.Body)
 	c.Assert(err, chk.IsNil)
 	c.Assert(blobContents, chk.DeepEquals, chunk1)
 
@@ -110,8 +110,8 @@ func (s *StorageBlobSuite) TestPutAppendBlobSpecialChars(c *chk.C) {
 	options.Range.End = uint64(len(chunk1) + len(chunk2) - 1)
 	out, err = b.GetRange(&options)
 	c.Assert(err, chk.IsNil)
-	defer out.Close()
-	blobContents, err = ioutil.ReadAll(out)
+	defer out.Body.Close()
+	blobContents, err = ioutil.ReadAll(out.Body)
 	c.Assert(err, chk.IsNil)
 	c.Assert(blobContents, chk.DeepEquals, append(chunk1, chunk2...))
 }

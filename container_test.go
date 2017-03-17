@@ -313,7 +313,8 @@ func (s *ContainerSuite) TestListBlobsWithMetadata(c *chk.C) {
 			"Lol":      name,
 			"Rofl_BAZ": "Waz Qux",
 		}
-		c.Assert(b.SetMetadata(nil), chk.IsNil)
+		_, err := b.SetMetadata(nil)
+		c.Assert(err, chk.IsNil)
 		expectMeta[name] = BlobMetadata{
 			"lol":      name,
 			"rofl_baz": "Waz Qux",

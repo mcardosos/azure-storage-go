@@ -87,6 +87,7 @@ type AzureStorageServiceError struct {
 	Reason                    string `xml:"Reason"`
 	StatusCode                int
 	RequestID                 string
+	OtherErrors               string
 }
 
 type odataErrorMessageMessage struct {
@@ -465,8 +466,8 @@ func serviceErrFromStatusCode(code int, status string, requestID string) AzureSt
 }
 
 func (e AzureStorageServiceError) Error() string {
-	return fmt.Sprintf("storage: service returned error: StatusCode=%d, ErrorCode=%s, ErrorMessage=%s, RequestId=%s, QueryParameterName=%s, QueryParameterValue=%s",
-		e.StatusCode, e.Code, e.Message, e.RequestID, e.QueryParameterName, e.QueryParameterValue)
+	return fmt.Sprintf("storage: service returned error: StatusCode=%d, ErrorCode=%s, ErrorMessage=%s, RequestId=%s, QueryParameterName=%s, QueryParameterValue=%s. Other errors encountered: %s",
+		e.StatusCode, e.Code, e.Message, e.RequestID, e.QueryParameterName, e.QueryParameterValue, e.OtherErrors)
 }
 
 // checkRespCode returns UnexpectedStatusError if the given response code is not
